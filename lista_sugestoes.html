@@ -1,0 +1,524 @@
+{% extends "base.html" %}
+
+{% block title %}Sugestões de Presentes - {{ grupo.nome }}{% endblock %}
+
+{% block content %}
+<div class="sugestoes-container">
+    <div class="sugestoes-header">
+        <h1><i class="fas fa-gifts"></i> Sugestões de Presentes</h1>
+        <p class="subtitle">Grupo: {{ grupo.nome }}</p>
+        <a href="{{ url_for('ver_grupo', grupo_id=grupo.id) }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Voltar ao Grupo
+        </a>
+    </div>
+
+    <!-- Formulário para adicionar sugestão -->
+    <div class="card adicionar-sugestao">
+        <h3><i class="fas fa-plus-circle"></i> Adicionar Nova Sugestão</h3>
+        <form id="formSugestao">
+            <div class="form-group">
+                <label for="descricao">O que você gostaria de ganhar? *</label>
+                <textarea id="descricao" name="descricao" rows="3"
+                          placeholder="Exemplo: Livro sobre programação, Jogo de tabuleiro, Camiseta geek..."
+                          required></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="link">Link de referência (opcional)</label>
+                <input type="url" id="link" name="link"
+                       placeholder="https://exemplo.com/produto"
+                       pattern="https?://.+">
+                <small class="form-text">Cole aqui um link para facilitar quem for comprar</small>
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-paper-plane"></i> Adicionar Sugestão
+            </button>
+        </form>
+    </div>
+
+    <!-- Lista de sugestões -->
+    <div class="sugestoes-lista">
+        {% if sugestoes_por_usuario %}
+            {% for usuario_id, dados in sugestoes_por_usuario.items() %}
+            <div class="card sugestoes-usuario">
+                <div class="usuario-header">
+                    <div class="usuario-info">
+                        <div class="avatar">{{ dados.usuario.nome[0]|upper }}</div>
+                        <div>
+                            <h3>{{ dados.usuario.nome }}</h3>
+                            <small>{{ dados.usuario.email }}</small>
+                        </div>
+                    </div>
+                    <span class="badge-count">{{ dados.sugestoes|length }} sugestão(ões)</span>
+                </div>
+
+                <div class="sugestoes-grid">
+                    {% for sugestao in dados.sugestoes %}
+                    <div class="sugestao-item" data-id="{{ sugestao.id }}">
+                        <div class="sugestao-content">
+                            <p>{{ sugestao.descricao }}</p>
+                            {% if sugestao.link %}
+                            <a href="{{ sugestao.link }}" target="_blank" class="sugestao-link">
+                                <i class="fas fa-external-link-alt"></i> Ver link
+                            </a>
+                            {% endif %}
+                        </div>
+
+                        <div class="sugestao-actions">
+                            <small class="sugestao-date">
+                                {{ sugestao.updated_at.strftime('%d/%m/%Y %H:%M') }}
+                            </small>
+
+                            {% if sugestao.usuario_id == current_user.id %}
+                            <div class="action-buttons">
+                                <button onclick="editarSugestao({{ sugestao.id }})"
+                                        class="btn-action btn-edit" title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="removerSugestao({{ sugestao.id }})"
+                                        class="btn-action btn-delete" title="Remover">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+        <div class="card empty-sugestoes">
+            <div class="empty-content">
+                <i class="fas fa-gift fa-3x"></i>
+                <h3>Nenhuma sugestão ainda</h3>
+                <p>Seja o primeiro a adicionar uma sugestão de presente!</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal para edição -->
+<div id="modalEditar" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-edit"></i> Editar Sugestão</h3>
+            <button onclick="fecharModal()" class="btn-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="formEditar">
+                <input type="hidden" id="editarId">
+                <div class="form-group">
+                    <label for="editarDescricao">Descrição *</label>
+                    <textarea id="editarDescricao" name="descricao" rows="3" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="editarLink">Link (opcional)</label>
+                    <input type="url" id="editarLink" name="link">
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button onclick="fecharModal()" class="btn btn-secondary">Cancelar</button>
+            <button onclick="salvarEdicao()" class="btn btn-primary">Salvar</button>
+        </div>
+    </div>
+</div>
+
+<style>
+.sugestoes-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.sugestoes-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.sugestoes-header .subtitle {
+    color: #666;
+    font-size: 1.2rem;
+    margin: 10px 0;
+}
+
+.adicionar-sugestao {
+    margin-bottom: 30px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #333;
+}
+
+.form-group textarea,
+.form-group input {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-family: inherit;
+}
+
+.form-group textarea:focus,
+.form-group input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.form-text {
+    display: block;
+    margin-top: 5px;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.sugestoes-lista {
+    display: grid;
+    gap: 20px;
+}
+
+.sugestoes-usuario {
+    margin-bottom: 20px;
+}
+
+.usuario-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.usuario-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.usuario-info .avatar {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.5rem;
+}
+
+.badge-count {
+    background: #e3f2fd;
+    color: #1976d2;
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-weight: 600;
+}
+
+.sugestoes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 15px;
+}
+
+.sugestao-item {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 15px;
+    border: 1px solid #e9ecef;
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.sugestao-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.sugestao-content p {
+    margin: 0 0 10px 0;
+    line-height: 1.5;
+}
+
+.sugestao-link {
+    display: inline-block;
+    color: #667eea;
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.sugestao-link:hover {
+    text-decoration: underline;
+}
+
+.sugestao-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px solid #dee2e6;
+}
+
+.sugestao-date {
+    color: #666;
+    font-size: 0.85rem;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-action {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 0.9rem;
+    transition: background-color 0.3s;
+}
+
+.btn-edit {
+    color: #2196F3;
+}
+
+.btn-edit:hover {
+    background-color: #e3f2fd;
+}
+
+.btn-delete {
+    color: #f44336;
+}
+
+.btn-delete:hover {
+    background-color: #ffebee;
+}
+
+.empty-sugestoes {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+.empty-content i {
+    color: #ddd;
+    margin-bottom: 20px;
+}
+
+.empty-content h3 {
+    color: #666;
+    margin-bottom: 10px;
+}
+
+.empty-content p {
+    color: #888;
+}
+
+/* Modal */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+    background-color: white;
+    margin: 10% auto;
+    padding: 0;
+    width: 90%;
+    max-width: 500px;
+    border-radius: 10px;
+    box-shadow: 0 5px 30px rgba(0,0,0,0.3);
+}
+
+.modal-header {
+    padding: 20px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.modal-footer {
+    padding: 20px;
+    border-top: 1px solid #eee;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+</style>
+
+<script>
+// Adicionar sugestão
+document.getElementById('formSugestao').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const formData = new FormData(this);
+
+    fetch(`/grupo/{{ grupo.id }}/sugestao/adicionar`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+            return;
+        }
+
+        if (data.success) {
+            // Recarregar a página para mostrar nova sugestão
+            location.reload();
+        }
+    })
+    .catch(error => {
+        alert('Erro ao adicionar sugestão');
+        console.error('Error:', error);
+    });
+});
+
+// Editar sugestão
+function editarSugestao(sugestaoId) {
+    const sugestaoItem = document.querySelector(`[data-id="${sugestaoId}"]`);
+    const descricao = sugestaoItem.querySelector('p').textContent;
+    const linkElement = sugestaoItem.querySelector('.sugestao-link');
+    const link = linkElement ? linkElement.getAttribute('href') : '';
+
+    document.getElementById('editarId').value = sugestaoId;
+    document.getElementById('editarDescricao').value = descricao;
+    document.getElementById('editarLink').value = link;
+
+    document.getElementById('modalEditar').style.display = 'block';
+}
+
+// Remover sugestão
+function removerSugestao(sugestaoId) {
+    if (!confirm('Tem certeza que deseja remover esta sugestão?')) {
+        return;
+    }
+
+    fetch(`/sugestao/${sugestaoId}/remover`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+            return;
+        }
+
+        if (data.success) {
+            // Remover elemento da lista
+            const sugestaoItem = document.querySelector(`[data-id="${sugestaoId}"]`);
+            if (sugestaoItem) {
+                sugestaoItem.remove();
+
+                // Se não houver mais sugestões, recarregar página
+                const sugestoesGrid = sugestaoItem.closest('.sugestoes-grid');
+                if (sugestoesGrid && sugestoesGrid.children.length === 0) {
+                    location.reload();
+                }
+            }
+        }
+    })
+    .catch(error => {
+        alert('Erro ao remover sugestão');
+        console.error('Error:', error);
+    });
+}
+
+// Modal functions
+function fecharModal() {
+    document.getElementById('modalEditar').style.display = 'none';
+}
+
+function salvarEdicao() {
+    const sugestaoId = document.getElementById('editarId').value;
+    const descricao = document.getElementById('editarDescricao').value;
+    const link = document.getElementById('editarLink').value;
+
+    if (!descricao.trim()) {
+        alert('A descrição é obrigatória!');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('descricao', descricao);
+    if (link) {
+        formData.append('link', link);
+    }
+
+    fetch(`/sugestao/${sugestaoId}/editar`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+            return;
+        }
+
+        if (data.success) {
+            // Atualizar item na lista
+            const sugestaoItem = document.querySelector(`[data-id="${sugestaoId}"]`);
+            if (sugestaoItem) {
+                sugestaoItem.querySelector('p').textContent = data.sugestao.descricao;
+
+                const linkElement = sugestaoItem.querySelector('.sugestao-link');
+                if (data.sugestao.link) {
+                    if (linkElement) {
+                        linkElement.setAttribute('href', data.sugestao.link);
+                    } else {
+                        const newLink = document.createElement('a');
+                        newLink.href = data.sugestao.link;
+                        newLink.className = 'sugestao-link';
+                        newLink.innerHTML = '<i class="fas fa-external-link-alt"></i> Ver link';
+                        newLink.target = '_blank';
+                        sugestaoItem.querySelector('.sugestao-content').appendChild(newLink);
+                    }
+                } else if (linkElement) {
+                    linkElement.remove();
+                }
+            }
+
+            fecharModal();
+        }
+    })
+    .catch(error => {
+        alert('Erro ao editar sugestão');
+        console.error('Error:', error);
+    });
+}
+
+// Fechar modal ao clicar fora
+window.onclick = function(event) {
+    const modal = document.getElementById('modalEditar');
+    if (event.target == modal) {
+        fecharModal();
+    }
+}
+</script>
+{% endblock %}

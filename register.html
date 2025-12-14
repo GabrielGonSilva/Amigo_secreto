@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+
+{% block title %}Cadastro - Amigo Secreto{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <h1><i class="fas fa-user-plus"></i> Criar Conta</h1>
+            <p>Junte-se a nós e organize seus amigos secretos</p>
+        </div>
+
+        <form method="POST" action="{{ url_for('register') }}" class="auth-form" id="registerForm">
+            <div class="form-group">
+                <label for="nome">
+                    <i class="fas fa-user"></i> Nome Completo
+                </label>
+                <input type="text" id="nome" name="nome" required
+                       placeholder="Seu nome"
+                       value="{{ request.form.nome if request.form }}">
+            </div>
+
+            <div class="form-group">
+                <label for="email">
+                    <i class="fas fa-envelope"></i> Email
+                </label>
+                <input type="email" id="email" name="email" required
+                       placeholder="seu@email.com"
+                       value="{{ request.form.email if request.form }}">
+                <small class="form-text">Usaremos para login e notificações</small>
+            </div>
+
+            <div class="form-group">
+                <label for="password">
+                    <i class="fas fa-lock"></i> Senha
+                </label>
+                <input type="password" id="password" name="password" required
+                       placeholder="Mínimo 6 caracteres"
+                       minlength="6">
+                <div class="password-strength">
+                    <div class="strength-bar"></div>
+                    <small class="strength-text">Força da senha: <span id="strengthText">Fraca</span></small>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="confirm_password">
+                    <i class="fas fa-lock"></i> Confirmar Senha
+                </label>
+                <input type="password" id="confirm_password" name="confirm_password" required
+                       placeholder="Digite a senha novamente">
+                <small class="form-text" id="passwordMatch"></small>
+            </div>
+
+            <div class="form-check">
+                <input type="checkbox" id="terms" name="terms" required>
+                <label for="terms">
+                    Concordo com os
+                    <a href="#terms-modal" class="terms-link">Termos de Uso</a>
+                    e
+                    <a href="#privacy-modal" class="terms-link">Política de Privacidade</a>
+                </label>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block" id="submitBtn">
+                <i class="fas fa-user-plus"></i> Criar Conta
+            </button>
+
+            <div class="auth-links">
+                <p>Já tem uma conta?
+                    <a href="{{ url_for('login') }}">Faça login</a>
+                </p>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.password-strength {
+    margin-top: 10px;
+}
+
+.strength-bar {
+    height: 5px;
+    background: #ddd;
+    border-radius: 3px;
+    margin-bottom: 5px;
+    overflow: hidden;
+}
+
+.strength-bar::after {
+    content: '';
+    display: block;
+    height: 100%;
+    width: 0%;
+    background: #FF6B6B;
+    transition: width 0.3s, background 0.3s;
+}
+
+.strength-text {
+    display: block;
+    color: #666;
+    font-size: 0.85rem;
+}
+
+.form-check {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin: 20px 0 30px 0;
+}
+
+.form-check input {
+    margin-top: 5px;
+}
+
+.form-check label {
+    font-size: 0.95rem;
+    color: #555;
+    line-height: 1.5;
+}
+
+.terms-link {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.terms-link:hover {
+    text-decoration: underline;
+}
+
+.form-text {
+    display: block;
+    margin-top: 5px;
+    color: #666;
+    font-size: 0.85rem;
+}
+
+#passwordMatch {
+    color: #FF6B6B;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const password = document.getElementById('password');
+    const confirmPassword = document.getElementById('confirm_password');
+    const strengthBar = document.querySelector('.strength-bar');
+    const strengthText = document.getElementById('strengthText');
+    const passwordMatch = document.getElementById('passwordMatch');
+    const submitBtn = document.getElementById('submitBtn');
+
+    // Verificar força da senha
+    password.addEventListener('input', function() {
+        const value = this.value;
+        let strength = 0;
+
+        if (value.length >= 6) strength++;
+        if (value.length >= 8) strength++;
+        if (/[A-Z]/.test(value)) strength++;
+        if (/[0-9]/.test(value)) strength++;
+        if (/[^A-Za-z0-9]/.test(value)) strength++;
+
+        // Atualizar barra de força
+        const width = (strength / 5) * 100;
+        strengthBar.style.setProperty('--width', width + '%');
+
+        // Cor baseada na força
+        let color, text;
+        if (strength <= 1) {
+            color = '#FF6B6B';
+            text = 'Fraca';
+        } else if (strength <= 3) {
+            color = '#F39C12';
+            text = 'Média';
+        } else {
+            color = '#2ECC71';
+            text = 'Forte';
+        }
+
+        strengthBar.querySelector('::after').style.width = width + '%';
+        strengthBar.querySelector('::after').style.backgroundColor = color;
+        strengthText.textContent = `Força da senha: ${text}`;
+        strengthText.style.color = color;
+    });
+
+    // Verificar se senhas coincidem
+    function checkPasswordMatch() {
+        if (confirmPassword.value === '') {
+            passwordMatch.textContent = '';
+            return;
+        }
+
+        if (password.value === confirmPassword.value) {
+            passwordMatch.textContent = '✅ Senhas coincidem';
+            passwordMatch.style.color = '#2ECC71';
+            submitBtn.disabled = false;
+        } else {
+            passwordMatch.textContent = '❌ As senhas não coincidem';
+            passwordMatch.style.color = '#FF6B6B';
+            submitBtn.disabled = true;
+        }
+    }
+
+    password.addEventListener('input', checkPasswordMatch);
+    confirmPassword.addEventListener('input', checkPasswordMatch);
+
+    // CSS para a barra de força
+    const style = document.createElement('style');
+    style.textContent = `
+        .strength-bar::after {
+            width: var(--width, 0%);
+        }
+    `;
+    document.head.appendChild(style);
+});
+</script>
+{% endblock %}
