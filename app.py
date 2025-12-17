@@ -573,12 +573,18 @@ def api_status_sorteio(grupo_id):
         ]
     })
 
-@app.route('/init-db')
-def init_db():
-    db.create_all()
-    return 'Banco inicializado com sucesso'
+def init_database():
+    try:
+        with app.app_context():
+            db.create_all()
+    except Exception as e:
+        print("Erro ao inicializar banco:", e)
 
+
+init_database()
 
 if __name__ == '__main__':
     app.run(debug=True)
+
+
 
