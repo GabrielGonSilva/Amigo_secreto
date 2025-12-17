@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="{{ url_for('static', filename='images/favicon.ico') }}"
+    <link rel="icon" href="{{ url_for('static', filename='img/favicon.ico') }}"
           type="image/x-icon">
     <title>{% block title %}Amigo Secreto Online{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
@@ -14,7 +14,7 @@
     <nav class="navbar">
         <div class="container">
             <a href="{{ url_for('index') }}" class="logo">
-                img src="{{ url_for('static', filename='images/logo.png') }}"
+                <img src="{{ url_for('static', filename='img/logo.png') }}">
                     alt="Amigo Secreto"
                     style="height: 40px; margin-right: 10px;">
                 <span>Amigo Secreto</span>
