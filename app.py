@@ -13,7 +13,11 @@ import secrets
 
 load_dotenv()
 
-app = Flask(__name__)
+app = Flask(
+    __name__,
+    template_folder="templates",
+    static_folder="static"
+)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key')
 database_url = os.getenv('DATABASE_URL')
 if database_url and database_url.startswith('postgres://'):
@@ -589,6 +593,7 @@ init_database()
 
 if __name__ == '__main__':
     app.run(debug=False)
+
 
 
 
