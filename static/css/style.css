@@ -574,10 +574,10 @@ textarea.form-control {
         height: 120px;
     }
 
-    .logo img {
-    height: 40px;
-    width: auto;
-        transition: transform 0.3s;
+    .logo {
+      height: 40px;
+      width: auto;
+      margin-right: 10px;
     }
 
     .logo img:hover {
