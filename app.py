@@ -148,9 +148,13 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 def enviar_email(destinatario, assunto, corpo_html):
+    if not os.getenv("RESEND_API_KEY"):
+        print("RESEND_API_KEY não configurada, e-mail ignorado")
+        return False
+
     try:
         params = {
-            "from": "Amigo Secreto <no-reply@resend.dev>",
+            "from": os.getenv("EMAIL_FROM", "Amigo Secreto <onboarding@resend.dev>"),
             "to": [destinatario],
             "subject": assunto,
             "html": corpo_html
@@ -158,7 +162,7 @@ def enviar_email(destinatario, assunto, corpo_html):
         resend.Emails.send(params)
         return True
     except Exception as e:
-        print(f"Erro ao enviar email: {e}")
+        print("Erro ao enviar email:", e)
         return False
 
 @app.route('/')
@@ -585,6 +589,7 @@ init_database()
 
 if __name__ == '__main__':
     app.run(debug=True)
+
 
 
 
